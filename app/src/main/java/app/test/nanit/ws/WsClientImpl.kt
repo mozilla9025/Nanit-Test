@@ -12,6 +12,8 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import java.io.EOFException
+import java.net.SocketTimeoutException
 import javax.inject.Inject
 
 class WsClientImpl @Inject constructor(
@@ -26,7 +28,10 @@ class WsClientImpl @Inject constructor(
     override val messages: Flow<String> = _messages.asSharedFlow()
 
     override fun connect(socketUrl: String) {
-        disconnect()
+        if (_connectionState.value != ConnectionState.Disconnected) {
+            Log.d("WS", "Attempt to connect in wrong state: ${_connectionState.value}")
+            return
+        }
 
         Log.d("WS", "Connect: $socketUrl")
 
@@ -34,6 +39,8 @@ class WsClientImpl @Inject constructor(
             .url(socketUrl)
             .build()
         webSocket = okHttpClient.newWebSocket(request = request, listener = this)
+
+        _connectionState.value = ConnectionState.Connecting
     }
 
     override fun emit(message: String) {
@@ -44,11 +51,17 @@ class WsClientImpl @Inject constructor(
 
     override fun disconnect() {
         Log.d("WS", "Disconnect...")
-        webSocket?.close(1000, "Normal disconnect")
+
+        _connectionState.value = ConnectionState.Disconnecting
+
+        if (webSocket?.close(1000, "Normal disconnect") == false) {
+            disconnectForcefully()
+        }
     }
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
         Log.d("WS", "Opened: $response")
+
         _connectionState.value = ConnectionState.Connected
     }
 
@@ -71,6 +84,37 @@ class WsClientImpl @Inject constructor(
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-        Log.e("WS", "On fail: $t $response")
+        Log.e("WS", "On fail: ${t.printStackTrace()} $response")
+        when (t) {
+            is SocketTimeoutException -> handleTimeoutException()
+            is EOFException -> handleEOFException()
+        }
+    }
+
+    private fun disconnectForcefully() {
+        webSocket?.cancel()
+    }
+
+    private fun handleTimeoutException() {
+        when (_connectionState.value) {
+            ConnectionState.Connecting -> {
+                disconnectForcefully()
+                _connectionState.value = ConnectionState.Disconnected
+            }
+
+            else -> Unit
+        }
+    }
+
+    private fun handleEOFException() {
+        when (_connectionState.value) {
+            ConnectionState.Connecting,
+            ConnectionState.Disconnecting -> {
+                disconnectForcefully()
+                _connectionState.value = ConnectionState.Disconnected
+            }
+
+            else -> Unit
+        }
     }
 }

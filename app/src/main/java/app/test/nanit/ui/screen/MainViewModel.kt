@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.test.nanit.model.Birthday
 import app.test.nanit.util.mutate
-import app.test.nanit.ws.ConnectionState
 import app.test.nanit.ws.WsClient
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +24,7 @@ class MainViewModel @Inject constructor(
     private val moshi: Moshi
 ) : ViewModel(), MainScreenContract.ViewModel {
 
-    private val _state = MutableStateFlow(MainScreenContract.State(ConnectionState.Disconnected))
+    private val _state = MutableStateFlow(MainScreenContract.State())
     private val _action = MutableSharedFlow<MainScreenContract.Action>()
 
     override val state: StateFlow<MainScreenContract.State> = _state.asStateFlow()
@@ -38,14 +37,22 @@ class MainViewModel @Inject constructor(
 
     override fun onEvent(event: MainScreenContract.Event) {
         when (event) {
-            is MainScreenContract.Event.Connect -> onConnect(event.ip)
+            is MainScreenContract.Event.OnIpValueTyped -> onIpValueTyped(event.ip)
+            MainScreenContract.Event.Connect -> onConnect()
             MainScreenContract.Event.Disconnect -> onDisconnect()
             MainScreenContract.Event.SendMessage -> onSendMessage()
         }
     }
 
-    private fun onConnect(ip: String) {
-        wsClient.connect("ws://${ip}/nanit")
+    private fun onIpValueTyped(ip: String) {
+        viewModelScope.launch {
+            _state.mutate { copy(ipAddress = ip) }
+        }
+    }
+
+    private fun onConnect() {
+        val typedIp = _state.value.ipAddress
+        wsClient.connect("ws://${typedIp}/nanit")
     }
 
     private fun onDisconnect() {

@@ -14,14 +14,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import app.test.nanit.ui.screen.MainScreenContract.Action
+import app.test.nanit.ui.screen.MainScreenContract.Event
+import app.test.nanit.ui.screen.MainScreenContract.State
 import app.test.nanit.ui.theme.NanitTestTheme
 import app.test.nanit.ws.ConnectionState
 
@@ -36,28 +36,28 @@ fun MainScreen(
     LaunchedEffect(Unit) {
         viewModel.action.collect {
             when (it) {
-                is MainScreenContract.Action.NavigateToBirthday -> navController.navigate("birthday")
+                is Action.NavigateToBirthday -> navController.navigate("birthday")
             }
         }
     }
 
     MainScreenContent(
         uiState = uiState,
-        onConnectClick = { ip -> viewModel.onEvent(MainScreenContract.Event.Connect(ip)) },
-        onDisconnectClick = { viewModel.onEvent(MainScreenContract.Event.Disconnect) },
-        onSendMessageClick = { viewModel.onEvent(MainScreenContract.Event.SendMessage) }
+        onIpValueTyped = { ip -> viewModel.onEvent(Event.OnIpValueTyped(ip)) },
+        onConnectClick = { viewModel.onEvent(Event.Connect) },
+        onDisconnectClick = { viewModel.onEvent(Event.Disconnect) },
+        onSendMessageClick = { viewModel.onEvent(Event.SendMessage) }
     )
 }
 
 @Composable
 private fun MainScreenContent(
-    uiState: MainScreenContract.State,
-    onConnectClick: (ip: String) -> Unit,
+    uiState: State,
+    onIpValueTyped: (ip: String) -> Unit,
+    onConnectClick: () -> Unit,
     onDisconnectClick: () -> Unit,
     onSendMessageClick: () -> Unit,
 ) {
-    var textInput by remember { mutableStateOf("") }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,18 +67,18 @@ private fun MainScreenContent(
     ) {
 
         TextField(
-            value = textInput,
+            value = uiState.ipAddress,
             onValueChange = { input ->
-                textInput = input
+                onIpValueTyped(input)
             },
-            label = { Text("Enter IP") },
+            label = { Text("Enter IP and port") },
         )
 
         Button(
             onClick = if (uiState.connectionState == ConnectionState.Connected) {
                 onDisconnectClick
             } else {
-                { onConnectClick(textInput) }
+                onConnectClick
             },
             enabled = uiState.connectionState == ConnectionState.Connected || uiState.connectionState == ConnectionState.Disconnected
         ) {
@@ -105,8 +105,8 @@ private fun MainScreenContent(
 private fun MainScreenContentPreview() {
     NanitTestTheme {
         Scaffold {
-            val uiState = MainScreenContract.State(ConnectionState.Connected)
-            MainScreenContent(uiState = uiState, {}, {}, {})
+            val uiState = State("10.20.30.40", ConnectionState.Connected)
+            MainScreenContent(uiState = uiState, {}, {}, {}, {})
         }
     }
 }

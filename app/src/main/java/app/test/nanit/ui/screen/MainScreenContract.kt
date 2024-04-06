@@ -15,8 +15,8 @@ interface MainScreenContract {
     }
 
     data class State(
-        val ipAddress: String,
-        val connectionState: ConnectionState,
+        val ipAddress: String = "",
+        val connectionState: ConnectionState = ConnectionState.Disconnected,
     )
 
     sealed interface Action {
@@ -26,7 +26,8 @@ interface MainScreenContract {
     }
 
     sealed interface Event {
-        class Connect(val ip: String) : Event
+        class OnIpValueTyped(val ip: String): Event
+        data object Connect : Event
         data object Disconnect : Event
         data object SendMessage : Event
     }
