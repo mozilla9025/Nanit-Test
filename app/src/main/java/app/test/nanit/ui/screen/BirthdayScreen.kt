@@ -114,8 +114,8 @@ private fun BirthdayScreenContent(
 
             Text(
                 text = when (uiState.ageTimeUnit) {
-                    DisplayBirthday.TimeUnit.Month -> "month old"
-                    DisplayBirthday.TimeUnit.Year -> "years old"
+                    DisplayBirthday.TimeUnit.Month -> "month(s) old"
+                    DisplayBirthday.TimeUnit.Year -> "year(s) old"
                 }.uppercase(),
                 style = Typography.bodyLarge,
                 fontStyle = FontStyle.Normal,
@@ -128,6 +128,11 @@ private fun BirthdayScreenContent(
             Image(
                 painter = painterResource(id = uiState.uiModel.placeholderImage),
                 contentDescription = null
+            )
+            Image(
+                painter = painterResource(id = R.drawable.nanit_logo),
+                contentDescription = null,
+                modifier = Modifier.padding(top = 15.dp)
             )
         }
         AsyncImage(
