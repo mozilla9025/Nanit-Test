@@ -10,12 +10,23 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import app.test.nanit.ui.screen.BirthdayScreen
+import app.test.nanit.ui.screen.BirthdayViewModel
 import app.test.nanit.ui.screen.MainScreen
 import app.test.nanit.ui.theme.NanitTestTheme
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.components.ActivityComponent
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @EntryPoint
+    @InstallIn(ActivityComponent::class)
+    interface ViewModelFactoryProvider {
+        fun birthdayViewModelFactory(): BirthdayViewModel.Factory
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -24,14 +35,20 @@ class MainActivity : ComponentActivity() {
                 Scaffold { padding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "main",
+                        startDestination = NavRoute.Main.destination,
                         modifier = Modifier.padding(padding)
                     ) {
-                        composable("main") {
+                        composable(route = NavRoute.Main.destination) {
                             MainScreen(navController)
                         }
-                        composable("birthday") {
-                            BirthdayScreen()
+                        composable(
+                            route = NavRoute.Birthday.destination,
+                            arguments = NavRoute.Birthday.args
+                        ) {
+                            BirthdayScreen(
+                                navController = navController,
+                                birthdayId = it.arguments?.getString("birthdayId", "") ?: ""
+                            )
                         }
                     }
                 }

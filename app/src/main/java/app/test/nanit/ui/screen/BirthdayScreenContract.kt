@@ -4,20 +4,27 @@ import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Color
 import app.test.nanit.R
 import app.test.nanit.model.Birthday
+import app.test.nanit.model.DisplayBirthday
 import app.test.nanit.ui.theme.ElephantAccent
 import app.test.nanit.ui.theme.FoxAccent
 import app.test.nanit.ui.theme.PelicanAccent
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface BirthdayScreenContract {
     interface ViewModel {
         val state: StateFlow<State>
+        val action: SharedFlow<Action>
+    }
+
+    sealed interface Action {
+        data object NavigateBack : Action
     }
 
     data class State(
         val uiModel: UiModel = UiModel.make(Birthday.Theme.Elephant, 1),
         val name: String = "",
-        val monthNumber: Int = -1,
+        val ageTimeUnit: DisplayBirthday.TimeUnit = DisplayBirthday.TimeUnit.Month,
     )
 
     data class UiModel(

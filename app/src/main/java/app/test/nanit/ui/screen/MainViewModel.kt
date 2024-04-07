@@ -2,10 +2,10 @@ package app.test.nanit.ui.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.test.nanit.model.Birthday
+import app.test.nanit.domain.BirthdayCache
+import app.test.nanit.domain.CheckBirthdayValidityUseCase
 import app.test.nanit.util.mutate
 import app.test.nanit.ws.WsClient
-import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,13 +15,15 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val wsClient: WsClient,
-    private val moshi: Moshi
+    private val checkBirthdayValidity: CheckBirthdayValidityUseCase,
+    private val birthdayCache: BirthdayCache
 ) : ViewModel(), MainScreenContract.ViewModel {
 
     private val _state = MutableStateFlow(MainScreenContract.State())
@@ -72,8 +74,9 @@ class MainViewModel @Inject constructor(
     private fun observeMessages() {
         viewModelScope.launch {
             wsClient.messages
-                .map { moshi.adapter(Birthday::class.java).fromJson(it) }
+                .map { checkBirthdayValidity(it) }
                 .filterNotNull()
+                .onEach { birthdayCache.update(BirthdayCache.Data.Value(it)) }
                 .collect {
                     _action.emit(MainScreenContract.Action.NavigateToBirthday(it))
                 }

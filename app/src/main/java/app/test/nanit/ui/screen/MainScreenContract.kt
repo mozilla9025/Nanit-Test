@@ -1,6 +1,6 @@
 package app.test.nanit.ui.screen
 
-import app.test.nanit.model.Birthday
+import app.test.nanit.model.DisplayBirthday
 import app.test.nanit.ws.ConnectionState
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,12 +21,12 @@ interface MainScreenContract {
 
     sealed interface Action {
         data class NavigateToBirthday(
-            val birthday: Birthday
+            val birthday: DisplayBirthday
         ) : Action
     }
 
     sealed interface Event {
-        class OnIpValueTyped(val ip: String): Event
+        class OnIpValueTyped(val ip: String) : Event
         data object Connect : Event
         data object Disconnect : Event
         data object SendMessage : Event

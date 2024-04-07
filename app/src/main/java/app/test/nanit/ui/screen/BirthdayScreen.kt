@@ -1,6 +1,7 @@
 package app.test.nanit.ui.screen
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -21,20 +23,45 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import app.test.nanit.R
 import app.test.nanit.model.Birthday
+import app.test.nanit.model.DisplayBirthday
+import app.test.nanit.ui.MainActivity
 import app.test.nanit.ui.theme.NanitTestTheme
 import app.test.nanit.ui.theme.Typography
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun BirthdayScreen(
-    viewModel: BirthdayScreenContract.ViewModel = hiltViewModel<BirthdayViewModel>()
+    navController: NavController,
+    birthdayId: String,
+    viewModelFactory: @Composable () -> BirthdayViewModel.Factory = {
+        EntryPointAccessors.fromActivity(
+            LocalContext.current as Activity,
+            MainActivity.ViewModelFactoryProvider::class.java
+        ).birthdayViewModelFactory()
+    },
+    viewModel: BirthdayScreenContract.ViewModel = viewModel<BirthdayViewModel>(
+        factory = BirthdayViewModel.provideFactory(
+            factory = viewModelFactory(),
+            birthdayId = birthdayId
+        )
+    )
 ) {
     val uiState by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.action.collect {
+            when (it) {
+                BirthdayScreenContract.Action.NavigateBack -> navController.popBackStack()
+            }
+        }
+    }
 
     BirthdayScreenContent(uiState)
 }
@@ -86,7 +113,10 @@ private fun BirthdayScreenContent(
             }
 
             Text(
-                text = "month old".uppercase(),
+                text = when (uiState.ageTimeUnit) {
+                    DisplayBirthday.TimeUnit.Month -> "month old"
+                    DisplayBirthday.TimeUnit.Year -> "years old"
+                }.uppercase(),
                 style = Typography.bodyLarge,
                 fontStyle = FontStyle.Normal,
                 modifier = Modifier.padding(
@@ -121,8 +151,8 @@ private fun BirthdayScreenContentPreview() {
         Scaffold {
             val uiState = BirthdayScreenContract.State(
                 uiModel = BirthdayScreenContract.UiModel.make(Birthday.Theme.Fox, 2),
-                monthNumber = 1,
-                name = "asdasd"
+                name = "asdasd",
+                ageTimeUnit = DisplayBirthday.TimeUnit.Year
             )
             BirthdayScreenContent(uiState)
         }

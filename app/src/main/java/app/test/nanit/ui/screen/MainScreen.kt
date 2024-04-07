@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import app.test.nanit.ui.NavRoute
 import app.test.nanit.ui.screen.MainScreenContract.Action
 import app.test.nanit.ui.screen.MainScreenContract.Event
 import app.test.nanit.ui.screen.MainScreenContract.State
@@ -36,7 +37,9 @@ fun MainScreen(
     LaunchedEffect(Unit) {
         viewModel.action.collect {
             when (it) {
-                is Action.NavigateToBirthday -> navController.navigate("birthday")
+                is Action.NavigateToBirthday -> {
+                    navController.navigate("birthday/${it.birthday.id}")
+                }
             }
         }
     }
